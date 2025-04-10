@@ -3,7 +3,7 @@ import zipfile
 import pandas as pd
 import tempfile
 
-from configs import SQS_PROCESSAMENTO_RENOVABIO, SQS_PROCESSAMENTO_RENOVABIO_DLQ
+from configs import DEBUG, SQS_PROCESSAMENTO_RENOVABIO, SQS_PROCESSAMENTO_RENOVABIO_DLQ
 from services.danfe_service import DanfeService
 from services.aws_service import AwsService
 from sqlalchemy import text
@@ -239,8 +239,10 @@ class NotaFiscalProcessorService:
       
     # 3. sincroniza chaves no banco de dados para controle
     def sync_key_nf(self, df, column_key_nf: str = 'key_nf'):
+        if DEBUG:
+            return df
         if not self.ok:
-            return   
+            return df
              
         # validar chaves banco de dados (somente chaves não processadas)
         self.track_log(f'Sincronizando Chaves no banco de dados')
@@ -259,8 +261,10 @@ class NotaFiscalProcessorService:
 
     # 4. filtrar somente nfs sincronizadas
     def filter_by_df_sync(self, df, df_sync, column_key_nf: str = 'key_nf'):
+        if DEBUG:
+            return df     
         if not self.ok:
-            return
+            return df
         df = df[df[column_key_nf].isin(df_sync['key_nf'])]
         if df.empty:
             self.track_log("Sem Chaves para processar.")
@@ -443,6 +447,9 @@ class NotaFiscalProcessorService:
     
     # 10. envia e-mail do processamento
     def send_email_process(self, input_url, output_url):
+        if DEBUG:
+            return
+        
         self.track_log(f'Enviando e-mail do processamento do arquivo ZIP {self.zip_name} para {self.user_email}')
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
@@ -461,13 +468,20 @@ class NotaFiscalProcessorService:
                 '')
             subject = self.nf_email_service.get_subject_processing(tipo_str, self.zip_name, self.request_origin)
             
-        error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
-        if error:
-            self.track_monitoring(error)
-            return False
-        else:
+        sucesso, code, msg = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
+        if sucesso:
             self.track_log(f'Email enviado para {self.user_email}')
             return True
+        else:
+            self.track_monitoring(msg)
+            return False            
+        # error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)    
+        # if error:
+        #     self.track_monitoring(error)
+        #     return False
+        # else:
+        #     self.track_log(f'Email enviado para {self.user_email}')
+        #     return True
     
     # 11. registra log
     def log_process(self, input_url, output_url):
@@ -504,6 +518,8 @@ class NotaFiscalProcessorService:
             
     # 13. send email completo do log
     def send_email_logs(self):
+        if DEBUG:
+            return        
         # pega o tipo
         tipo_str = self.get_tipo_str(self.tipo)
         
@@ -511,11 +527,16 @@ class NotaFiscalProcessorService:
         body_html, body_text = self.nf_email_service.get_body_log(self.transaction_id, self.get_logs(), self.get_errors())
         subject = self.nf_email_service.get_subject_log(tipo_str, self.zip_name, self.request_origin)
             
-        error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
-        if error:
-            return False
-        else:
-            return True    
+        sucesso, code, msg = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
+        self.track_log(msg)
+        if not sucesso:
+            self.track_error(msg)
+        return sucesso
+        # error, res = self.nf_email_service.send_email(self.user_email, self.zip_name, body_html, body_text, subject)
+        # if error:
+        #     return False
+        # else:
+        #     return True    
         
     # 14. salva xml no banco de dados
     def salvar_xml(self):

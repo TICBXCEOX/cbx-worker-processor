@@ -43,14 +43,14 @@ class NotaFiscalEmailService:
                 body_text: str,                 
                 subject: str):
         error: str = ''
-        
         try:
             email_service = EmailService()
-            res = email_service.just_send(email_service.from_address, to_address, '', subject, body_text, body_html)
+            sucesso, code, msg = email_service.just_send(email_service.from_address, to_address, '', subject, body_text, body_html)
+            return sucesso, code, msg
         except Exception as ex:            
             error = f'Erro ao tentar enviar email para {to_address} do processamento do arquivo {file_name}. Erro: {str(ex)}'
-        return error, res    
-      
+            return False, 0, error
+              
     def get_errors_html(self, errors):
         error_list = ("<ul>\n" + "\n".join(f"<li>{err}</li>" for err in errors) + "\n</ul>") if errors else ""
 

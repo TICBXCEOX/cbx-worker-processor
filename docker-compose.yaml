@@ -3,12 +3,14 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
-    container_name: worker-processor:latest
-    restart: "no" #sob demanda
+    container_name: worker-processor
+    restart: "no"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock    
     networks:
       - net
+    environment:
+      - ENVIRONMENT=production
 
 networks:
   net:

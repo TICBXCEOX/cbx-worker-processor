@@ -3,11 +3,12 @@ import unicodedata
 import pandas as pd
 from pathlib import Path
 from configs import DEBUG
+from services.nf_logger_service import NotaFiscalLoggerService
 from services.sefaz_service import SefazService
 
 class NotaFiscalExcelService:
     def __init__(self):
-        pass
+        self.nf_logger_service = NotaFiscalLoggerService()
             
     def save_sefaz(self, df: pd.DataFrame):
         bd = []
@@ -114,7 +115,7 @@ class NotaFiscalExcelService:
             total = len(files)             
             while i < total:
                 if DEBUG:
-                    print(f'{i} de {total}')
+                    self.nf_logger_service.track_log(f'{i} de {total}')
                     
                 f = files[i]
                 if "__MACOSX" not in str(f):
@@ -123,7 +124,7 @@ class NotaFiscalExcelService:
                         if keys_nf is not None and not keys_nf.empty:
                             dados.append(keys_nf)
                             if DEBUG:
-                                print(f'arquivo {str(f)} - {len(keys_nf)} chaves')
+                                self.nf_logger_service.track_log(f'arquivo {str(f)} - {len(keys_nf)} chaves')
                         if ers:
                             erros.extend(ers)
                     except Exception as ex:
@@ -155,33 +156,6 @@ class NotaFiscalExcelService:
                 "total_files": len(files) if files else 0
             }
                 
-    def clean_column_name(self, col_name):
-        """
-        Normalize column names:
-        - Remove accents (é → e, ã → a, ç → c, etc.)
-        - Replace spaces with underscores
-        - Convert to uppercase
-        
-        Ex.:
-            Inp: Data Emissão | Número Nota Fiscal | Chave de Acesso | Situação
-            Out: DATA_EMISSAO | NUMERO_NOTA_FISCAL | CHAVE_DE_ACESSO | SITUACAO
-        """
-        # Normalize Unicode characters (remove accents)
-        col_name = unicodedata.normalize("NFKD", col_name).encode("ASCII", "ignore").decode("utf-8")
-        
-        # Replace spaces with underscores and convert to uppercase
-        col_name = col_name.replace(" ", "_").upper()
-        
-        return col_name
-    
-    def force_column_names(self):        
-        return ['DATA_EMISSAO', 'SERIE', 'NUMERO_NF', 'CHAVE_DE_ACESSO', 'NATUREZA_OPERACAO', 
-                'TIPO_EMISSAO', 'NUMR_PROTOCOLO', 'DATA_AUTORIZACAO', 'SITUACAO', 
-                'CNPJ_CPF_EMISSOR', 'NOME_RAZAO_SOCIAL_EMISSOR', 'IE_EMISSOR', 'NOME_FANTASIA_EMISSOR', 'UF_EMISSOR', 
-                'CNPJ_CPF_DESTINATARIO', 'IE_DESTINATARIO', 'NOME_RAZAO_SOCIAL_DESTINATARIO', 'UF_DESTINATARIO',
-                'VALR_TOTAL_BASE_DE_CALCULO', 'VALR_TOTAL_ICMS', 'VALR_TOTAL_BC_ST',
-                'VALR_TOTAL_ICMS_ST', 'VALR_TOTAL_PRODUTO', 'VALR_TOTAL_FRETE',
-                'VALR_TOTAL_NOTA_FISCAL', 'VALR_TOTAL_SERVICO']                
             
     def column_format_map(self):
         # Column format mapping

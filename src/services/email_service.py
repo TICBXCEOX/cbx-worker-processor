@@ -1,6 +1,5 @@
 # using SendGrid's Python Library
 # https://github.com/sendgrid/sendgrid-python
-import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Cc, Content
 from configs import *
@@ -8,35 +7,30 @@ from configs import *
 class EmailService:
     def __init__(self) -> None:
         self.from_address = EMAIL_FROM
-        
-    def send(self, from_address, to_address, subject, message):
-        sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
-        from_email = Email(from_address)
-        to_email = To(to_address)
-        content = Content("text/plain", message)
-        mail = Mail(from_email, to_email, subject, content)
-        response = sg.client.mail.send.post(request_body=mail.get())
-        return response.status_code
-    
-    def just_send(self, from_address, to_address, to_cc, subject, message_plain_text, message_html = ''):
-        from_email = Email(from_address)
-                
-        # List of recipient email addresses
-        to_addresses = [to_address]
-
-        # Create a list of `To` objects for each recipient
-        to_emails = [To(email) for email in to_addresses]        
-                        
-        mail = Mail(from_email, to_emails, subject, message_plain_text, message_html)
-
-        if to_cc:
-            cc_addresses = [to_cc]
-            cc_emails = [Cc(email) for email in cc_addresses]            
-            mail.cc = cc_emails
             
-        sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
-        response = sg.send(mail)
-        return response.status_code
+    def just_send(self, from_address, to_address, to_cc, subject, message_plain_text, message_html = ''):
+        try:        
+            from_email = Email(from_address)
+                    
+            # List of recipient email addresses
+            to_addresses = [to_address]
+
+            # Create a list of `To` objects for each recipient
+            to_emails = [To(email) for email in to_addresses]        
+                            
+            mail = Mail(from_email, to_emails, subject, message_plain_text, message_html)
+
+            if to_cc:
+                cc_addresses = [to_cc]
+                cc_emails = [Cc(email) for email in cc_addresses]            
+                mail.cc = cc_emails
+                
+            sg = SendGridAPIClient(api_key=SENDGRID_API_KEY)
+            response = sg.send(mail)
+            return True, response.status_code, ''
+        except Exception as e:
+            error_message = f"Erro ao enviar email: {str(e)}"
+            return False, 0, error_message
     
     def send_error(self, to_address, error_str, file_name, transaction_id):
         # Subject of the email
@@ -72,9 +66,9 @@ class EmailService:
         </html>
         """
         
-        res = self.just_send(self.from_address, to_address, EMAIL_FROM, subject, plain_text, html_content)
+        sucess, code, msg = self.just_send(self.from_address, to_address, EMAIL_FROM, subject, plain_text, html_content)
 
-        return res
+        return sucess, code, msg
                             
     def get_flat_html_from_list(self, list):
         result = "<ul>\n" + "\n".join(f"<li>{f'{lst}'}</li>" for lst in list) + "\n</ul>" if list else ""

@@ -7,9 +7,9 @@ class SefazService:
     def __init__(self):
         pass
 
-    def insert_sefaz(self, rows):
-        try:
-            with get_db_connection() as connection, connection.cursor() as cursor:
+    def insert_sefaz(self, rows):        
+        with get_db_connection() as connection, connection.cursor() as cursor:
+            try:
                 query = """
                     INSERT INTO cbx.sefaz (
                         properties, data_emissao, ie_emissor,
@@ -42,8 +42,8 @@ class SefazService:
                 connection.commit()
 
                 return True, "Registros atualizados na base de dados do Sefaz"
-        except Exception as e:
-            status, msg = False, f'Erro ao inserir na base de dados do Sefaz: {str(e)}'
-            connection.rollback()            
-            connection = None
-        return status, msg
+            except Exception as e:
+                status, msg = False, f'Erro ao inserir na base de dados do Sefaz: {str(e)}'
+                connection.rollback()            
+                connection = None
+            return status, msg

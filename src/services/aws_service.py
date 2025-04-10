@@ -7,7 +7,7 @@ import boto3
 from pandas import DataFrame, ExcelWriter
 from services.email_service import EmailService
 from services.file_service import FileService
-from configs import ACCESS_KEY, SECRET_KEY, REGION_NAME, BUCKET_NAME, ROOT_UPLOAD_FOLDER, WAIT_TIME_SECONDS
+from configs import ACCESS_KEY, SECRET_KEY, REGION_NAME, BUCKET_NAME, ROOT_DOWNLOAD_FOLDER, WAIT_TIME_SECONDS
 
 class AwsService:
     def __init__(self):
@@ -56,10 +56,10 @@ class AwsService:
     def upload_csv_by_chunks(self, data_iterator: list, folder: str = '', expires: int=3600):
         error: str = ''
         try:
-            os.makedirs(ROOT_UPLOAD_FOLDER, exist_ok=True)
+            os.makedirs(ROOT_DOWNLOAD_FOLDER, exist_ok=True)
 
             # Criar um arquivo temporário
-            with tempfile.NamedTemporaryFile(delete=True, mode='w', newline='', dir=ROOT_UPLOAD_FOLDER) as temp_file:
+            with tempfile.NamedTemporaryFile(delete=True, mode='w', newline='', dir=ROOT_DOWNLOAD_FOLDER) as temp_file:
                 first_chunk = True             
                 
                 # Escrever dados no arquivo temporário
